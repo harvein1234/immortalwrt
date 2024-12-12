@@ -1,7 +1,6 @@
 #include "qcom-ipq8064-v1.0.dtsi"
 
 #include <dt-bindings/input/input.h>
-#include <dt-bindings/leds/common.h>
 #include <dt-bindings/soc/qcom,tcsr.h>
 
 / {
@@ -82,26 +81,22 @@
 		};
 
 		power_amber: power_amber {
-			function = LED_FUNCTION_POWER;
-			color = <LED_COLOR_ID_AMBER>;
+			label = "amber:power";
 			gpios = <&qcom_pinmux 9 GPIO_ACTIVE_HIGH>;
 		};
 
 		wan_white {
-			function = LED_FUNCTION_WAN;
-			color = <LED_COLOR_ID_WHITE>;
+			label = "white:wan";
 			gpios = <&qcom_pinmux 22 GPIO_ACTIVE_HIGH>;
 		};
 
 		wan_amber {
-			function = LED_FUNCTION_WAN;
-			color = <LED_COLOR_ID_AMBER>;
+			label = "amber:wan";
 			gpios = <&qcom_pinmux 23 GPIO_ACTIVE_HIGH>;
 		};
 
 		wps {
-			function = LED_FUNCTION_WPS;
-			color = <LED_COLOR_ID_WHITE>;
+			label = "white:wps";
 			gpios = <&qcom_pinmux 24 GPIO_ACTIVE_HIGH>;
 		};
 
@@ -111,8 +106,7 @@
 		};
 
 		power_white: power_white {
-			function = LED_FUNCTION_POWER;
-			color = <LED_COLOR_ID_WHITE>;
+			label = "white:power";
 			gpios = <&qcom_pinmux 53 GPIO_ACTIVE_HIGH>;
 			default-state = "keep";
 		};
@@ -153,23 +147,7 @@
 	};
 };
 
-&hs_phy_0 {
-	status = "okay";
-};
-
-&ss_phy_0 {
-	status = "okay";
-};
-
 &usb3_0 {
-	status = "okay";
-};
-
-&hs_phy_1 {
-	status = "okay";
-};
-
-&ss_phy_1 {
 	status = "okay";
 };
 
@@ -186,8 +164,11 @@
 	max-link-speed = <1>;
 };
 
-&nand {
+&nand_controller {
 	status = "okay";
+
+	pinctrl-0 = <&nand_pins>;
+	pinctrl-names = "default";
 
 	nand@0 {
 		reg = <0>;
@@ -198,7 +179,7 @@
 		nand-ecc-step-size = <512>;
 
 		nand-is-boot-medium;
-		qcom,boot-partitions = <0x0 0x1180000>;
+		qcom,boot_pages_size = <0x1180000>;
 
 		partitions {
 			compatible = "fixed-partitions";
@@ -227,20 +208,6 @@
 				label = "art";
 				reg = <0x1200000 0x0140000>;
 				read-only;
-
-				nvmem-layout {
-					compatible = "fixed-layout";
-					#address-cells = <1>;
-					#size-cells = <1>;
-
-					macaddr_art_0: macaddr@0 {
-						reg = <0x0 0x6>;
-					};
-
-					macaddr_art_6: macaddr@6 {
-						reg = <0x6 0x6>;
-					};
-				};
 			};
 
 			kernel@1340000 {
@@ -250,20 +217,9 @@
 
 			ubi@1740000 {
 				label = "ubi";
-				reg = <0x1740000 0x1600000>;
+				reg = <0x1740000 0x68C0000>;
 			};
-
-			netgear@2d40000 {
-				label = "netgear";
-				reg = <0x2d40000 0x0c00000>;
-				read-only;
-			};
-
-			reserve@3940000 {
-				label = "reserve";
-				reg = <0x3940000 0x46c0000>;
-				read-only;
-			};
+			
 		};
 	};
 };
@@ -274,103 +230,21 @@
 	pinctrl-0 = <&mdio0_pins>;
 	pinctrl-names = "default";
 
-	switch@10 {
-		compatible = "qca,qca8337";
-		#address-cells = <1>;
-		#size-cells = <0>;
-		reg = <0x10>;
+	phy0: ethernet-phy@0 {
+		reg = <0>;
+		qca,ar8327-initvals = <
+			0x00004 0x7600000   /* PAD0_MODE */
+			0x00008 0x1000000   /* PAD5_MODE */
+			0x0000c 0x80        /* PAD6_MODE */
+			0x000e4 0x6a545     /* MAC_POWER_SEL */
+			0x000e0 0xc74164de  /* SGMII_CTRL */
+			0x0007c 0x4e        /* PORT0_STATUS */
+			0x00094 0x4e        /* PORT6_STATUS */
+			>;
+	};
 
-		ports {
-			#address-cells = <1>;
-			#size-cells = <0>;
-
-			port@0 {
-				reg = <0>;
-				label = "cpu";
-				ethernet = <&gmac1>;
-				phy-mode = "rgmii";
-				tx-internal-delay-ps = <1000>;
-				rx-internal-delay-ps = <1000>;
-
-				fixed-link {
-					speed = <1000>;
-					full-duplex;
-				};
-			};
-
-			port@1 {
-				reg = <1>;
-				label = "lan1";
-				phy-mode = "internal";
-				phy-handle = <&phy_port1>;
-			};
-
-			port@2 {
-				reg = <2>;
-				label = "lan2";
-				phy-mode = "internal";
-				phy-handle = <&phy_port2>;
-			};
-
-			port@3 {
-				reg = <3>;
-				label = "lan3";
-				phy-mode = "internal";
-				phy-handle = <&phy_port3>;
-			};
-
-			port@4 {
-				reg = <4>;
-				label = "lan4";
-				phy-mode = "internal";
-				phy-handle = <&phy_port4>;
-			};
-
-			port@5 {
-				reg = <5>;
-				label = "wan";
-				phy-mode = "internal";
-				phy-handle = <&phy_port5>;
-			};
-
-			port@6 {
-				reg = <6>;
-				label = "cpu";
-				ethernet = <&gmac2>;
-				phy-mode = "sgmii";
-				qca,sgmii-enable-pll;
-
-				fixed-link {
-					speed = <1000>;
-					full-duplex;
-				};
-			};
-		};
-
-		mdio {
-			#address-cells = <1>;
-			#size-cells = <0>;
-
-			phy_port1: phy@0 {
-				reg = <0>;
-			};
-
-			phy_port2: phy@1 {
-				reg = <1>;
-			};
-
-			phy_port3: phy@2 {
-				reg = <2>;
-			};
-
-			phy_port4: phy@3 {
-				reg = <3>;
-			};
-
-			phy_port5: phy@4 {
-				reg = <4>;
-			};
-		};
+	phy4: ethernet-phy@4 {
+		reg = <4>;
 	};
 };
 
@@ -412,4 +286,18 @@
 
 &adm_dma {
 	status = "okay";
+};
+
+&art {
+	compatible = "nvmem-cells";
+	#address-cells = <1>;
+	#size-cells = <1>;
+
+	macaddr_art_0: macaddr@0 {
+		reg = <0x0 0x6>;
+	};
+
+	macaddr_art_6: macaddr@6 {
+		reg = <0x6 0x6>;
+	};
 };
